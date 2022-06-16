@@ -1,0 +1,19 @@
+# Settings
+wandb: False
+
+# Dataset
+name: "LJSPEECH"
+frame_len: 2.0
+SR: 22050
+samples: 10
+
+# Train
+mode: "default"
+network: [256,256,256,256]
+L: 32
+lr: 0.001
+optimizer: "Adam"
+loss_fn: "MSELoss"
+epochs: 1000
+log_img: 250
+plot: False
