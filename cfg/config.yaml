@@ -9,19 +9,29 @@ SR: 22050
 batched: False
 batch_size: 64
 samples: 5
+t_scale_max: 300
+n_fft: 2048
+hop_length: 512
+n_mels: 128
 
 # Train
 mode: "nerf"
 network: [128]
 epochs: 101
 bias: True
-L: 32
 lr: 0.001
 optimizer: "Adam"
 loss_fn: "MSELoss"
 loss_lst: ["L1Loss", "HuberLoss", "SmoothL1Loss"]
 SNR: True
 LSD: False
+
+# NERF
+L: 32
+
+# SIREN
+omega: 30
+siren_bias_init: True
 
 # Output
 log_img: 50

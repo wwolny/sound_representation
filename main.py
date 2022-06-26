@@ -10,6 +10,7 @@ from typing import List
 import matplotlib.pyplot as plt
 from torchaudio.datasets import LJSPEECH
 from torchmetrics import SignalNoiseRatio
+from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
 
 from sound_repr.dataset import Samples
 from sound_repr.utils import Sine, LSD
@@ -41,6 +42,14 @@ def main():
     logger.info("Process dataset...")
     dataset = LJSPEECH('datasets', download=False)
 
+    melspec = MelSpectrogram(
+        sample_rate=config["SR"],
+        n_fft=config["n_fft"],
+        hop_length=config["hop_length"],
+        n_mels=config["n_mels"]
+    )
+    amp2db = AmplitudeToDB()
+
     samples = Samples(dataset, SR=config["SR"], frame_len=config["frame_len"])
 
     logger.info("Running in mode: {0}".format(config["mode"]))
@@ -58,10 +67,7 @@ def main():
         logger.info(f"Process sample index: {id_}.")
         data = samples[id_]
         x_numpy = np.array(list(map(lambda el: [el], range(len(data)))))
-        if config["mode"] == "siren":
-            x_numpy = (x_numpy / len(x_numpy)) * 600 - 300
-        elif config["mode"] == "nerf":
-            x_numpy = (x_numpy / len(x_numpy)) * 2 - 1
+        x_numpy = (x_numpy / len(x_numpy)) * 2 * config["t_scale_max"] - config["t_scale_max"]
         x = torch.from_numpy(x_numpy).float()
 
         y_numpy = np.array(list(map(lambda el: [el], data)))
@@ -93,21 +99,25 @@ def main():
                 1,
                 1,
                 config["network"],
-                Sine(),
+                Sine(config["omega"]),
                 config["bias"]
             )
             with torch.no_grad():
-                for id_, mod in enumerate(module_lst):
+                for id_mod, mod in enumerate(module_lst):
                     if isinstance(mod, torch.nn.Linear):
-                        if id_ == 0:
+                        if id_mod == 0:
                             mod.weight.uniform_(-1 / mod.in_features, 1 / mod.in_features)
-                            mod.bias.uniform_(-1 / mod.in_features, 1 / mod.in_features)
+                            if config["siren_bias_init"]:
+                                mod.bias.uniform_(-1 / mod.in_features, 1 / mod.in_features)
                         else:
                             mod.weight.uniform_(-np.sqrt(6 / mod.in_features) / 30., np.sqrt(6 / mod.in_features) / 30.)
-                            mod.bias.uniform_(-np.sqrt(6 / mod.in_features) / 30., np.sqrt(6 / mod.in_features) / 30.)
+                            if config["siren_bias_init"]:
+                                mod.bias.uniform_(-np.sqrt(6 / mod.in_features) / 30.,
+                                                  np.sqrt(6 / mod.in_features) / 30.)
             model = torch.nn.Sequential(
                 *module_lst
             )
+
         elif config["mode"] == "default":
             model = torch.nn.Sequential(
                 *build_network(
@@ -127,6 +137,17 @@ def main():
         loss_fn = getattr(torch.nn, config["loss_fn"])()
         optimizer = getattr(torch.optim, config["optimizer"])(
             model.parameters(), lr=config["lr"])
+
+        plot_spectrogram(
+            sample=y.detach().numpy(),
+            mel_spec=melspec,
+            amp2db=amp2db
+        )
+        if config["wandb"]:
+            run.log({"original": plt}, commit=False)
+        else:
+            plt.show()
+        plt.close()
 
         # train
         batch_size = config["batch_size"]
@@ -154,7 +175,7 @@ def main():
                 loss_fn_list.append(loss.item())
                 if config["wandb"]:
                     for el in loss_lst.keys():
-                        run.log({el: loss_lst[el](y_pred, y).item(), 'epoch': i})
+                        run.log({el: loss_lst[el](y_pred, y).item(), 'epoch': i}, commit=False)
             else:
                 optimizer.zero_grad()
 
@@ -163,7 +184,7 @@ def main():
                 loss_fn_list.append(loss.item())
                 if config["wandb"]:
                     for el in loss_lst.keys():
-                        run.log({el: loss_lst[el](y_pred, y).item(), 'epoch': i})
+                        run.log({el: loss_lst[el](y_pred, y).item(), 'epoch': i}, commit=False)
 
                 loss.backward()
                 optimizer.step()
@@ -173,9 +194,20 @@ def main():
                 plt.plot(y)
                 plt.plot(y_pred.detach().numpy())
                 if config["wandb"]:
-                    run.log({"chart": plt})
+                    run.log({"wave": plt}, commit=False)
                 else:
                     plt.show()
+                plt.close()
+                plot_spectrogram(
+                    sample=y_pred.detach().numpy(),
+                    mel_spec=melspec,
+                    amp2db=amp2db
+                )
+                if config["wandb"]:
+                    run.log({"spectrogram": plt}, commit=False)
+                else:
+                    plt.show()
+                plt.close()
             if config["wandb"]:
                 run.log({'loss': loss.item(), 'epoch': i})
         logger.info(
@@ -201,6 +233,17 @@ def build_network(
         module_list.append(activation)
     module_list.append(torch.nn.Linear(network[-1], output, bias=bias))
     return module_list
+
+
+def plot_spectrogram(sample, mel_spec, amp2db):
+    sample = np.hstack(sample)
+    sample = torch.Tensor(sample)
+    spectrogram = mel_spec(sample)
+    spectrogram = amp2db(spectrogram)
+    plt.imshow(spectrogram)
+    plt.ylabel('Frequency [Hz]')
+    plt.xlabel('Time [sec]')
+
 
 if __name__ == '__main__':
     main()

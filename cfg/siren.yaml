@@ -1,19 +1,38 @@
 # Settings
-wandb: False
+wandb: True
+seed: 0
 
 # Dataset
 name: "LJSPEECH"
 frame_len: 2.0
 SR: 22050
-samples: 10
+batched: False
+batch_size: 64
+samples: 5
+t_scale_max: 300
+n_fft: 2048
+hop_length: 512
+n_mels: 128
 
 # Train
 mode: "siren"
-network: [128,128,128,128]
-L: 32
+network: [128]
+epochs: 1001
+bias: True
 lr: 0.001
 optimizer: "Adam"
 loss_fn: "MSELoss"
-epochs: 1000
-log_img: 250
+loss_lst: ["L1Loss", "HuberLoss", "SmoothL1Loss"]
+SNR: True
+LSD: False
+
+# NERF
+L: 32
+
+# SIREN
+omega: 30
+siren_bias_init: True
+
+# Output
+log_img: 50
 plot: False
