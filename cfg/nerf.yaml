@@ -31,8 +31,9 @@ L: 32
 
 # SIREN
 omega: 30
+hidden_omega: 30
 siren_bias_init: True
 
 # Output
-log_img: 50
-plot: False
+log_img: 25
+plot: True

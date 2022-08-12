@@ -4,7 +4,7 @@ import numpy as np
 
 
 class Sine(torch.nn.Module):
-    def __init__(self, w0: float = 30.0):
+    def __init__(self, w0: float = 1.0):
         super().__init__()
         self.w0 = w0
 

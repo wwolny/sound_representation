@@ -12,7 +12,7 @@ from torchaudio.datasets import LJSPEECH
 from torchmetrics import SignalNoiseRatio
 from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
 
-from sound_repr.dataset import Samples
+from sound_repr.dataset import Samples, CustomDataset
 from sound_repr.utils import Sine, LSD
 
 logger = logging.getLogger()
@@ -40,7 +40,20 @@ def main():
     torch.manual_seed(config["seed"])
 
     logger.info("Process dataset...")
-    dataset = LJSPEECH('datasets', download=False)
+    if config["name"] == "LJSPEECH":
+        dataset = LJSPEECH('drive/MyDrive/MgrData', download=False)
+    elif config["name"] == "GTZAN":
+        # dataset = GTZAN('drive/MyDrive/MgrData', download=True)
+        dataset = CustomDataset("drive/MyDrive/MgrData/small_gtzan/wavs")
+    elif config["name"] == "ESC50":
+        dataset = CustomDataset("drive/MyDrive/MgrData/small_rsc_50/wavs")
+    elif config["name"] == "UrbanSound":
+        dataset = CustomDataset("drive/MyDrive/MgrData/small_urban_sound/wavs")
+    else:
+        logger.error("Wrong dataset name")
+        return
+
+    config["SR"] = dataset[0][1]
 
     melspec = MelSpectrogram(
         sample_rate=config["SR"],
@@ -71,6 +84,7 @@ def main():
         x = torch.from_numpy(x_numpy).float()
 
         y_numpy = np.array(list(map(lambda el: [el], data)))
+        y_numpy = (y_numpy / max(max(y_numpy), -1 * min(y_numpy)))
         y = torch.from_numpy(y_numpy).float()
 
         if config["mode"] == "nerf":
@@ -91,7 +105,8 @@ def main():
                     1,
                     config["network"],
                     torch.nn.ReLU(),
-                    config["bias"]
+                    config["bias"],
+                    torch.nn.ReLU(),
                 )
             )
         elif config["mode"] == "siren":
@@ -99,8 +114,9 @@ def main():
                 1,
                 1,
                 config["network"],
+                Sine(config["hidden_omega"]),
+                config["bias"],
                 Sine(config["omega"]),
-                config["bias"]
             )
             with torch.no_grad():
                 for id_mod, mod in enumerate(module_lst):
@@ -110,10 +126,15 @@ def main():
                             if config["siren_bias_init"]:
                                 mod.bias.uniform_(-1 / mod.in_features, 1 / mod.in_features)
                         else:
-                            mod.weight.uniform_(-np.sqrt(6 / mod.in_features) / 30., np.sqrt(6 / mod.in_features) / 30.)
+                            mod.weight.uniform_(
+                                -np.sqrt(6 / mod.in_features) / config["hidden_omega"],
+                                np.sqrt(6 / mod.in_features) / config["hidden_omega"]
+                            )
                             if config["siren_bias_init"]:
-                                mod.bias.uniform_(-np.sqrt(6 / mod.in_features) / 30.,
-                                                  np.sqrt(6 / mod.in_features) / 30.)
+                                mod.bias.uniform_(
+                                    -np.sqrt(6 / mod.in_features) / config["hidden_omega"],
+                                    np.sqrt(6 / mod.in_features) / config["hidden_omega"]
+                                )
             model = torch.nn.Sequential(
                 *module_lst
             )
@@ -125,7 +146,8 @@ def main():
                     1,
                     config["network"],
                     torch.nn.ReLU(),
-                    config["bias"]
+                    config["bias"],
+                    torch.nn.ReLU(),
                 )
             )
         else:
@@ -222,10 +244,11 @@ def build_network(
         network: List[int],
         activation,
         bias: bool,
+        first_acitvation,
 ):
     module_list = [
         torch.nn.Linear(input_size, network[0], bias=bias),
-        activation
+        first_acitvation
     ]
     for module_id in range(1, len(network)):
         module_list.append(
@@ -241,8 +264,9 @@ def plot_spectrogram(sample, mel_spec, amp2db):
     spectrogram = mel_spec(sample)
     spectrogram = amp2db(spectrogram)
     plt.imshow(spectrogram)
+    plt.gca().invert_yaxis()
     plt.ylabel('Frequency [Hz]')
-    plt.xlabel('Time [sec]')
+    plt.xlabel('Time [ms]')
 
 
 if __name__ == '__main__':
