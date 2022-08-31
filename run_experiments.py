@@ -12,10 +12,10 @@ test_l = [1, 16, 32, 64]
 network_def = [[512, 512, 512, 512, 512]]
 
 # wielkość sieci nerf
-network_nerf = [[128, 128, 128, 128, 128]]
+network_nerf = [[256, 256, 256, 256, 256]]
 
 # wielkość sieci siren
-network_sir = [[128, 128, 128, 128, 128]]
+network_sir = [[256, 256, 256, 256, 256]]
 
 # scale_input
 scale_def = [1]
@@ -27,20 +27,24 @@ omega_0 = [1, 30, 50, 100, 1000]
 omega_hidden = [1, 30, 50, 100, 1000]
 
 if __name__ == '__main__':
-    samples = 1
-    epochs = 1000
+    samples = 10
+    epochs = 301
+    frame_len = 1
+    lr = 0.001
 
-    model = "default"
-    nets = network_def
-    scale = scale_def
-    def_cfg = MainConfig.from_dict({
-        "samples": samples,
-        "epochs": epochs,
-        "mode": model,
-        "network": nets[0],
-        "t_scale_max": scale[0],
-    })
-    main(def_cfg)
+    # model = "default"
+    # nets = network_def
+    # scale = scale_def
+    # def_cfg = MainConfig.from_dict({
+    #     "samples": samples,
+    #     "epochs": epochs,
+    #     "mode": model,
+    #     "network": nets[0],
+    #     "t_scale_max": scale[0],
+    #     "frame_len": frame_len,
+    #     "lr": lr,
+    # })
+    # main(def_cfg)
 
     model = "nerf"
     nets = network_nerf
@@ -72,6 +76,7 @@ if __name__ == '__main__':
                         "network": net,
                         "t_scale_max": sca,
                         "omega": o_0,
-                        "hidden_omega": h_o
+                        "hidden_omega": h_o,
+                        "lr": 0.0001
                     })
                     main(siren_cfg)

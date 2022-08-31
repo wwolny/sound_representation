@@ -6,7 +6,7 @@ import wandb
 import logging
 import argparse
 import numpy as np
-from typing import List
+from PIL import Image
 from dataclasses import asdict
 import matplotlib.pyplot as plt
 from torchaudio.datasets import LJSPEECH
@@ -14,7 +14,7 @@ from torchmetrics import SignalNoiseRatio
 from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
 
 from sound_repr.dataset import Samples, CustomDataset
-from sound_repr.utils import Sine, LSD
+from sound_repr.utils import Sine, LSD, plot_spectrogram, plot_spectrogram_Hz, build_network
 from cfg import MainConfig
 
 logger = logging.getLogger()
@@ -99,9 +99,9 @@ def main(config: MainConfig):
                     2 * L,
                     1,
                     config.network,
-                    torch.nn.ReLU(),
+                    torch.nn.LeakyReLU(),
                     config.bias,
-                    torch.nn.ReLU(),
+                    torch.nn.LeakyReLU(),
                 )
             )
         elif config.mode == "siren":
@@ -140,9 +140,9 @@ def main(config: MainConfig):
                     1,
                     1,
                     config.network,
-                    torch.nn.ReLU(),
+                    torch.nn.LeakyReLU(),
                     config.bias,
-                    torch.nn.ReLU(),
+                    torch.nn.LeakyReLU(),
                 )
             )
         else:
@@ -157,11 +157,31 @@ def main(config: MainConfig):
 
         plot_spectrogram(
             sample=y.detach().numpy(),
-            mel_spec=melspec,
-            amp2db=amp2db
+            sample_rate=config.SR
         )
+        image = wandb.Image(plt)
+
         if config.wandb:
-            run.log({"original": plt}, commit=False)
+            run.log({"original_mel": image}, commit=False)
+        else:
+            plt.show()
+        plt.close()
+
+        plt.plot(y)
+        if config.wandb:
+            run.log({"waveform": plt}, commit=False)
+        else:
+            plt.show()
+        plt.close()
+
+        plot_spectrogram_Hz(
+            sample=y.detach().numpy(),
+            sample_rate=config.SR
+        )
+        image = wandb.Image(plt)
+
+        if config.wandb:
+            run.log({"original_f": image}, commit=False)
         else:
             plt.show()
         plt.close()
@@ -215,13 +235,15 @@ def main(config: MainConfig):
                 else:
                     plt.show()
                 plt.close()
+
                 plot_spectrogram(
                     sample=y_pred.detach().numpy(),
-                    mel_spec=melspec,
-                    amp2db=amp2db
+                    sample_rate=config.SR
                 )
+                image = wandb.Image(plt)
+
                 if config.wandb:
-                    run.log({"spectrogram": plt}, commit=False)
+                    run.log({"spectrogram": image}, commit=False)
                 else:
                     plt.show()
                 plt.close()
@@ -231,37 +253,6 @@ def main(config: MainConfig):
             "Sample {0} final loss equals: {1}".format(id_, loss_fn_list[-1]))
         if config.wandb:
             run.finish()
-
-
-def build_network(
-        input_size: int,
-        output: int,
-        network: List[int],
-        activation,
-        bias: bool,
-        first_acitvation,
-):
-    module_list = [
-        torch.nn.Linear(input_size, network[0], bias=bias),
-        first_acitvation
-    ]
-    for module_id in range(1, len(network)):
-        module_list.append(
-            torch.nn.Linear(network[module_id - 1], network[module_id], bias=bias))
-        module_list.append(activation)
-    module_list.append(torch.nn.Linear(network[-1], output, bias=bias))
-    return module_list
-
-
-def plot_spectrogram(sample, mel_spec, amp2db):
-    sample = np.hstack(sample)
-    sample = torch.Tensor(sample)
-    spectrogram = mel_spec(sample)
-    spectrogram = amp2db(spectrogram)
-    plt.imshow(spectrogram)
-    plt.gca().invert_yaxis()
-    plt.ylabel('Frequency [Hz]')
-    plt.xlabel('Time [ms]')
 
 
 if __name__ == '__main__':
