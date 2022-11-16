@@ -6,15 +6,16 @@ import wandb
 import logging
 import argparse
 import numpy as np
-from PIL import Image
 from dataclasses import asdict
 import matplotlib.pyplot as plt
 from torchaudio.datasets import LJSPEECH
 from torchmetrics import SignalNoiseRatio
-from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
 
 from sound_repr.dataset import Samples, CustomDataset
-from sound_repr.utils import Sine, LSD, plot_spectrogram, plot_spectrogram_Hz, build_network
+from sound_repr.models.baseline import BaselineModel
+from sound_repr.models.nerf import NeRFModel
+from sound_repr.models.siren import SIRENModel
+from sound_repr.utils import plot_spectrogram, plot_spectrogram_Hz
 from cfg import MainConfig
 
 logger = logging.getLogger()
@@ -50,14 +51,6 @@ def main(config: MainConfig):
 
     config.SR = dataset[0][1]
 
-    melspec = MelSpectrogram(
-        sample_rate=config.SR,
-        n_fft=config.n_fft,
-        hop_length=config.hop_length,
-        n_mels=config.n_mels
-    )
-    amp2db = AmplitudeToDB()
-
     samples = Samples(dataset, SR=config.SR, frame_len=config.frame_len)
 
     logger.info("Running in mode: {0}".format(config.mode))
@@ -83,68 +76,23 @@ def main(config: MainConfig):
         y = torch.from_numpy(y_numpy).float()
 
         if config.mode == "nerf":
-            L = config.L
             indices = torch.arange(0, len(x_numpy),
                                    dtype=torch.float).unsqueeze(-1)
             indices = -1 + (1 + 1) * indices / (len(x_numpy) - 1)
-            indices = indices.repeat(1, 2 * L)
-            for nerf_l in range(L):
+            indices = indices.repeat(1, 2 * config.L)
+            for nerf_l in range(config.L):
                 arg = 2 ** nerf_l * torch.pi * indices[:, 2 * nerf_l]
                 indices[:, 2 * nerf_l] = torch.sin(arg)
                 indices[:, 2 * nerf_l + 1] = torch.cos(arg)
             x = indices
 
-            model = torch.nn.Sequential(
-                *build_network(
-                    2 * L,
-                    1,
-                    config.network,
-                    torch.nn.LeakyReLU(),
-                    config.bias,
-                    torch.nn.LeakyReLU(),
-                )
-            )
+            model = NeRFModel(config)
+
         elif config.mode == "siren":
-            module_lst = build_network(
-                1,
-                1,
-                config.network,
-                Sine(config.hidden_omega),
-                config.bias,
-                Sine(config.omega),
-            )
-            with torch.no_grad():
-                for id_mod, mod in enumerate(module_lst):
-                    if isinstance(mod, torch.nn.Linear):
-                        if id_mod == 0:
-                            mod.weight.uniform_(-1 / mod.in_features, 1 / mod.in_features)
-                            if config.siren_bias_init:
-                                mod.bias.uniform_(-1 / mod.in_features, 1 / mod.in_features)
-                        else:
-                            mod.weight.uniform_(
-                                -np.sqrt(6 / mod.in_features) / config.hidden_omega,
-                                np.sqrt(6 / mod.in_features) / config.hidden_omega
-                            )
-                            if config.siren_bias_init:
-                                mod.bias.uniform_(
-                                    -np.sqrt(6 / mod.in_features) / config.hidden_omega,
-                                    np.sqrt(6 / mod.in_features) / config.hidden_omega
-                                )
-            model = torch.nn.Sequential(
-                *module_lst
-            )
+            model = SIRENModel(config)
 
         elif config.mode == "default":
-            model = torch.nn.Sequential(
-                *build_network(
-                    1,
-                    1,
-                    config.network,
-                    torch.nn.LeakyReLU(),
-                    config.bias,
-                    torch.nn.LeakyReLU(),
-                )
-            )
+            model = BaselineModel(config)
         else:
             exit()
 
@@ -163,14 +111,14 @@ def main(config: MainConfig):
 
         if config.wandb:
             run.log({"original_mel": image}, commit=False)
-        else:
+        elif config.plot:
             plt.show()
         plt.close()
 
         plt.plot(y)
         if config.wandb:
             run.log({"waveform": plt}, commit=False)
-        else:
+        elif config.plot:
             plt.show()
         plt.close()
 
@@ -182,7 +130,7 @@ def main(config: MainConfig):
 
         if config.wandb:
             run.log({"original_f": image}, commit=False)
-        else:
+        elif config.plot:
             plt.show()
         plt.close()
 
