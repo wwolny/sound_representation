@@ -14,6 +14,8 @@ class BaseConfig:
 class MainConfig(BaseConfig):
     # Settings
     wandb: bool = True
+    wandb_entity: str = "wwolny"
+    wandb_project: str = "sound_representation"
     seed: int = 0
 
     # Dataset

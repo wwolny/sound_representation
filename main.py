@@ -59,8 +59,8 @@ def main(config: MainConfig):
         if config.wandb:
             logger.info("Initializing  WandB...")
             run = wandb.init(
-                project="sound_representation",
-                entity="wwolny",
+                project=config.wandb_project,
+                entity=config.wandb_entity,
                 config={**asdict(config), **{"sample_id": id_}},
                 reinit=True,
             )
