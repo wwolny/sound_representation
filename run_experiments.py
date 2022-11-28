@@ -1,5 +1,5 @@
-from main import main
 from cfg import MainConfig
+from main import main
 
 main_cfg = MainConfig()
 
@@ -26,7 +26,7 @@ scale_siren = [1, 300, 600]
 omega_0 = [1, 30, 50, 100, 1000]
 omega_hidden = [1, 30, 50, 100, 1000]
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     samples = 10
     epochs = 301
     frame_len = 1
@@ -52,14 +52,16 @@ if __name__ == '__main__':
     L_s = test_l
     for net in nets:
         for test_l in test_l:
-            nerf_cfg = MainConfig.from_dict({
-                "samples": samples,
-                "epochs": epochs,
-                "mode": model,
-                "network": net,
-                "t_scale_max": scale[0],
-                "L": test_l
-            })
+            nerf_cfg = MainConfig.from_dict(
+                {
+                    "samples": samples,
+                    "epochs": epochs,
+                    "mode": model,
+                    "network": net,
+                    "t_scale_max": scale[0],
+                    "L": test_l,
+                }
+            )
             main(nerf_cfg)
 
     model = "siren"
@@ -69,14 +71,16 @@ if __name__ == '__main__':
         for sca in scale:
             for o_0 in omega_0:
                 for h_o in omega_hidden:
-                    siren_cfg = MainConfig.from_dict({
-                        "samples": samples,
-                        "epochs": epochs,
-                        "mode": model,
-                        "network": net,
-                        "t_scale_max": sca,
-                        "omega": o_0,
-                        "hidden_omega": h_o,
-                        "lr": 0.0001
-                    })
+                    siren_cfg = MainConfig.from_dict(
+                        {
+                            "samples": samples,
+                            "epochs": epochs,
+                            "mode": model,
+                            "network": net,
+                            "t_scale_max": sca,
+                            "omega": o_0,
+                            "hidden_omega": h_o,
+                            "lr": 0.0001,
+                        }
+                    )
                     main(siren_cfg)

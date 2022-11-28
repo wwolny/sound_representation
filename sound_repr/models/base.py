@@ -1,5 +1,6 @@
-import torch.nn
 from typing import List
+
+import torch.nn
 
 
 class BaseModel(torch.nn.Sequential):

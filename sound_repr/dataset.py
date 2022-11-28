@@ -1,8 +1,9 @@
-from torch.utils.data.dataset import Dataset
-import torch
-from scipy.io import wavfile
 from os import listdir
 from os.path import isfile, join
+
+import torch
+from scipy.io import wavfile
+from torch.utils.data.dataset import Dataset
 
 
 class Samples(Dataset):
@@ -22,7 +23,7 @@ class Samples(Dataset):
             return raw[:n_samples]
         else:
             signal = torch.zeros(n_samples)
-            signal[:len(raw)] = raw
+            signal[: len(raw)] = raw
             return signal
 
     def __len__(self):

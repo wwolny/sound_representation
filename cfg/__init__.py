@@ -1,5 +1,6 @@
-from dataclasses import dataclass, fields, field
+from dataclasses import dataclass, field, fields
 from typing import List
+
 
 @dataclass
 class BaseConfig:
@@ -38,7 +39,9 @@ class MainConfig(BaseConfig):
     lr: float = 0.001
     optimizer: str = "Adam"
     loss_fn: str = "MSELoss"
-    loss_lst: List[str] = field(default_factory=lambda: ["L1Loss", "HuberLoss", "SmoothL1Loss"])
+    loss_lst: List[str] = field(
+        default_factory=lambda: ["L1Loss", "HuberLoss", "SmoothL1Loss"]
+    )
     SNR: bool = True
     LSD: bool = False
 
