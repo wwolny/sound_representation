@@ -1,5 +1,5 @@
-from cfg import MainConfig
 from main import main
+from sound_repr.cfg import MainConfig
 
 if __name__ == "__main__":
     samples = 10
