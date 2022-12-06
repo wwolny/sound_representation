@@ -7,6 +7,8 @@ from sound_repr.utils import Sine, build_network
 
 
 class SIRENModel(BaseModel):
+    """MLP model with sine based activation and weights init."""
+
     def __init__(self, config: MainConfig):
         super().__init__()
         module_lst = build_network(

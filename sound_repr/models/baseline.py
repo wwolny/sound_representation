@@ -6,6 +6,8 @@ from sound_repr.utils import build_network
 
 
 class BaselineModel(BaseModel):
+    """MLP model with ReLU based activation."""
+
     def __init__(self, config: MainConfig):
         super().__init__()
         module_lst = build_network(
