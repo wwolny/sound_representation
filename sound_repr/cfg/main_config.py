@@ -6,6 +6,8 @@ from sound_repr.cfg.base_config import BaseConfig
 
 @dataclass
 class MainConfig(BaseConfig):
+    """Dataclass with values to run experiments."""
+
     # Settings
     wandb: bool = True
     wandb_entity: str = "wwolny"
