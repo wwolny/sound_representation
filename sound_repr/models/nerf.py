@@ -1,6 +1,6 @@
 import torch.nn
 
-from sound_repr.cfg import MainConfig
+from sound_repr.cfg.main_config import MainConfig
 from sound_repr.models.base import BaseModel
 from sound_repr.utils import build_network
 

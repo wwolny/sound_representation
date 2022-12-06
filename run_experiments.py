@@ -1,5 +1,5 @@
 from main import main
-from sound_repr.cfg import MainConfig
+from sound_repr.cfg.main_config import MainConfig
 
 main_cfg = MainConfig()
 

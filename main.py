@@ -12,7 +12,7 @@ from torchaudio.datasets import LJSPEECH
 from torchmetrics import SignalNoiseRatio
 
 import wandb
-from sound_repr.cfg import MainConfig
+from sound_repr.cfg.main_config import MainConfig
 from sound_repr.dataset import CustomDataset, Samples
 from sound_repr.models.baseline import BaselineModel
 from sound_repr.models.nerf import NeRFModel
