@@ -8,19 +8,23 @@ from matplotlib import pyplot as plt
 
 
 class Sine(torch.nn.Module):
+    """Sine activation."""
+
     def __init__(self, w0: float = 1.0):
         super().__init__()
         self.w0 = w0
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:  # type: ignore
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return torch.sin(self.w0 * x)
 
 
-def get_power(x):
+def get_power(x: np.ndarray):
+    """Return power of given signal from spectrogram."""
     return np.log(np.abs(librosa.stft(x, 2048)) ** 2 + 1e-8)
 
 
-def LSD(preds, targets):
+def LSD(preds: torch.Tensor, targets: torch.Tensor):
+    """Return log-spectral distortion."""
     preds = preds.detach().numpy()
     targets = targets.detach().numpy()
     S1 = get_power(targets)
@@ -30,6 +34,7 @@ def LSD(preds, targets):
 
 
 def plot_spectrogram_Hz(sample, sample_rate):
+    """Plot spectrogram with Hertz on y-axis."""
     sample = np.hstack(sample)
     sgram = librosa.stft(sample)
     out_sgram = librosa.amplitude_to_db(np.abs(sgram), ref=np.min)
@@ -42,6 +47,7 @@ def plot_spectrogram_Hz(sample, sample_rate):
 
 
 def plot_spectrogram(sample, sample_rate):
+    """Plot spectrogram with Hertz on y-axis using MEL scale."""
     sample = np.hstack(sample)
     sgram = librosa.stft(sample)
     mel_scale_sgram = librosa.feature.melspectrogram(S=sgram, n_mels=128)
@@ -58,10 +64,11 @@ def build_network(
     input_size: int,
     output: int,
     network: List[int],
-    activation,
+    activation: torch.nn.Module,
     bias: bool,
-    first_activation,
+    first_activation: torch.nn.Module,
 ):
+    """Create list of NN Modules for initialization of the network."""
     module_list = [
         torch.nn.Linear(input_size, network[0], bias=bias),
         first_activation,
