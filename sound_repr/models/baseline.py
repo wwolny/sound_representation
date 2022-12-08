@@ -18,5 +18,4 @@ class BaselineModel(BaseModel):
             config.bias,
             torch.nn.LeakyReLU(),
         )
-        print(module_lst)
         self.add_module_lst(module_lst)
