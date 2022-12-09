@@ -32,19 +32,21 @@ if __name__ == "__main__":
     frame_len = 1
     lr = 0.001
 
-    # model = "default"
-    # nets = network_def
-    # scale = scale_def
-    # def_cfg = MainConfig.from_dict({
-    #     "samples": samples,
-    #     "epochs": epochs,
-    #     "mode": model,
-    #     "network": nets[0],
-    #     "t_scale_max": scale[0],
-    #     "frame_len": frame_len,
-    #     "lr": lr,
-    # })
-    # main(def_cfg)
+    model = "default"
+    nets = network_def
+    scale = scale_def
+    def_cfg = MainConfig.from_dict(
+        {
+            "samples": samples,
+            "epochs": epochs,
+            "mode": model,
+            "network": nets[0],
+            "t_scale_max": scale[0],
+            "frame_len": frame_len,
+            "lr": lr,
+        }
+    )
+    main(def_cfg)
 
     model = "nerf"
     nets = network_nerf
