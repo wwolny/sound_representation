@@ -17,7 +17,7 @@ from sound_repr.dataset import CustomDataset, Samples
 from sound_repr.models.baseline import BaselineModel
 from sound_repr.models.nerf import NeRFModel
 from sound_repr.models.siren import SIRENModel
-from sound_repr.utils import plot_spectrogram, plot_spectrogram_Hz
+from sound_repr.utils import plot_spectrogram, plot_spectrogram_hz
 
 logger = logging.getLogger()
 logging.basicConfig(
@@ -124,7 +124,7 @@ def main(config: MainConfig):
             plt.show()
         plt.close()
 
-        plot_spectrogram_Hz(sample=y.detach().numpy(), sample_rate=config.SR)
+        plot_spectrogram_hz(sample=y.detach().numpy(), sample_rate=config.SR)
         image = wandb.Image(plt)
 
         if config.wandb:

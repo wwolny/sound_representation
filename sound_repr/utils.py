@@ -23,17 +23,17 @@ def get_power(x: np.ndarray):
     return np.log(np.abs(librosa.stft(x, 2048)) ** 2 + 1e-8)
 
 
-def LSD(preds: torch.Tensor, targets: torch.Tensor):
-    """Return log-spectral distortion."""
+def log_spectral_distortion(preds: torch.Tensor, targets: torch.Tensor):
+    """Return log-spectral distortion metric(LSD)."""
     preds = preds.detach().numpy()
     targets = targets.detach().numpy()
-    S1 = get_power(targets)
-    S2 = get_power(preds)
-    lsd = np.mean(np.sqrt(np.mean((S1 - S2) ** 2 + 1e-8, axis=1)), axis=0)
+    s1 = get_power(targets)
+    s2 = get_power(preds)
+    lsd = np.mean(np.sqrt(np.mean((s1 - s2) ** 2 + 1e-8, axis=1)), axis=0)
     return torch.tensor([min(lsd, 10.0)])
 
 
-def plot_spectrogram_Hz(sample, sample_rate):
+def plot_spectrogram_hz(sample, sample_rate):
     """Plot spectrogram with Hertz on y-axis."""
     sample = np.hstack(sample)
     sgram = librosa.stft(sample)
