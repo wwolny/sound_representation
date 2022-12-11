@@ -12,12 +12,12 @@ class Samples(Dataset):
     def __init__(self, dataset: Dataset, sr: int, frame_len: int):
         self._dataset = dataset
         self.frame_length = frame_len
-        self.SR = sr
+        self.sr = sr
 
     def __getitem__(self, idx: int):
         raw, sr, label, _ = self._dataset[idx]
         raw = raw[0]
-        assert sr == self.SR
+        assert sr == self.sr
 
         n_samples = int(self.frame_length * sr)
 
